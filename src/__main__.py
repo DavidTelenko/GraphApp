@@ -1,15 +1,16 @@
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
-from views import Application
+from views.app import Application
 
 
 def main():
     import sys
 
     app = QApplication(sys.argv)
-    solver = Application()
-    solver.show()
+
+    Application().show()
+
     sys.exit(app.exec_())
 
 

@@ -2,7 +2,7 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from views.menu import MenuBar
-from views.viewport import Viewport
+from views.viewport import GraphWidget
 from utils import Resource
 from pathlib import Path
 import sys
@@ -42,7 +42,8 @@ class Application(QMainWindow):
         self.setWindowTitle(self.metadata["appname"][self.settings["locale"]])
 
     def loadMain(self):
-        return QGraphicsView(Viewport(self, self.viewportStrings), self)
+        return GraphWidget(self)
+        # return QGraphicsView(Viewport(self, self.viewportStrings), self)
 
     def setTheme(self):
         self.setStyleSheet(self.themes[self.settings["theme"]])
@@ -67,3 +68,4 @@ class Application(QMainWindow):
             self.settings["locale"] / f"{helpKey}.html"
         with open(pagePath, encoding="utf8") as file:
             QMessageBox.about(self, helpName, file.read())
+
