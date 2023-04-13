@@ -25,8 +25,8 @@ class GraphWidget(QGraphicsView):
 
         self.id = 0
         self.graph = {}
-        self.selected = []
-        self.nodeDragged = False
+        self.selected = set()
+        self.nodePressed = False
 
         self.lastMousePress = None
 
@@ -107,8 +107,9 @@ class GraphWidget(QGraphicsView):
         newNode.setPen(QPen(Qt.NoPen))
         newNode.setBrush(QColor(150, 150, 150))
         newNode.setPos(pos)
-        newNode.setId(self.id)
-        self.graph[self.id] = {}
+        id = str(self.id)
+        newNode.setId(id)
+        self.graph[id] = {}
 
         self.id += 1
         self.scene().addItem(newNode)
@@ -199,7 +200,7 @@ class GraphWidget(QGraphicsView):
 
     def dragScreenStart(self, pos, items):
         if (self.verticalScrollBar().isVisible() or
-                self.horizontalScrollBar().isVisible() and not self.nodeDragged):
+                self.horizontalScrollBar().isVisible() and not self.nodePressed):
             self.setCursor(Qt.ClosedHandCursor)
             self.dragPos = pos
             return
@@ -207,7 +208,7 @@ class GraphWidget(QGraphicsView):
         self.dragPos = None
 
     def dragScreenBody(self, pos):
-        if self.dragPos is None or self.nodeDragged:
+        if self.dragPos is None or self.nodePressed:
             return
 
         delta = self.dragPos - pos
@@ -220,24 +221,24 @@ class GraphWidget(QGraphicsView):
             self.horizontalScrollBar().value() + delta.x())
 
     def dragScreenEnd(self):
-        if self.dragPos is not None or self.nodeDragged:
+        if self.dragPos is not None or self.nodePressed:
             self.setCursor(Qt.ArrowCursor)
         self.dragPos = None
 
     def selectionRoutineStart(self, pos):
-        if self.nodeDragged:
+        if self.nodePressed:
             return
         self.lastMousePress = pos
         self.selectionRect.setRect(
             QRectF(self.lastMousePress, self.lastMousePress))
 
     def selectionRoutineBody(self, pos):
-        if self.nodeDragged:
+        if self.nodePressed:
             return
         self.selectionRect.setRect(QRectF(self.lastMousePress, pos))
 
     def selectionRoutineEnd(self):
-        if self.nodeDragged or self.lastMousePress is None:
+        if self.nodePressed or self.lastMousePress is None:
             return
         selected = self.scene().items(self.selectionRect.rect())
         self.selectionRect.setRect(
@@ -256,26 +257,30 @@ class GraphWidget(QGraphicsView):
                 self.selected.remove(item)
             else:
                 item.setSelected(True)
-                self.selected.append(item)
+                self.selected.add(item)
 
-    def checkNodeDragged(self, items):
-        self.nodeDragged = False
+    def checkNodePressed(self, items):
+        self.nodePressed = False
         for item in items:
             if isinstance(item, Node):
-                self.nodeDragged = True
-                break
+                self.nodePressed = True
+                return item
 
     def mousePressEvent(self, event: QMouseEvent):
         super().mousePressEvent(event)
 
         pos = self.mapToScene(event.pos())
         items = self.scene().items(pos)
-        self.checkNodeDragged(items)
+        # self.checkNodePressed(items)
+        self.nodePressed = len(items) != 0
 
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.LeftButton and event.modifiers() == Qt.ControlModifier:
+            self.selectItems(items)
+
+        elif event.button() == Qt.LeftButton:
             self.selectionRoutineStart(pos)
 
-        if event.button() == Qt.RightButton:
+        elif event.button() == Qt.RightButton:
             self.dragScreenStart(event.pos(), items)
 
     def mouseMoveEvent(self, event: QMouseEvent):
@@ -286,7 +291,7 @@ class GraphWidget(QGraphicsView):
         if event.buttons() == Qt.LeftButton:
             self.selectionRoutineBody(pos)
 
-        if event.buttons() == Qt.RightButton:
+        elif event.buttons() == Qt.RightButton:
             self.dragScreenBody(event.pos())
 
     def mouseReleaseEvent(self, event: QMouseEvent):
@@ -295,11 +300,11 @@ class GraphWidget(QGraphicsView):
         pos = self.mapToScene(event.pos())
         items = self.scene().items(pos)
 
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.LeftButton and event.modifiers() == Qt.NoModifier:
             self.addNodeIfPossible(pos, items)
             self.selectionRoutineEnd()
 
-        if event.button() == Qt.RightButton:
+        elif event.button() == Qt.RightButton:
             self.dragScreenEnd()
 
         # print(self.selected)

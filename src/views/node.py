@@ -20,14 +20,10 @@ class Node(QGraphicsEllipseItem):
             "color": QColor(255, 100, 100)
         }
         self.selected = False
-
-        self.newPos = QPointF(0, 0)
         self.graph = graphWidget
 
         self.id = -1
         self.label = None
-
-        # self.bRect = QGraphicsRectItem(self)
 
     def setId(self, id):
         self.id = id
@@ -50,10 +46,6 @@ class Node(QGraphicsEllipseItem):
 
         for edge in self.edgeSet:
             edge.adjust()
-
-        # self.bRect.setPen(QPen(Qt.green))
-        # self.bRect.setBrush(Qt.transparent)
-        # self.bRect.setRect(self.boundingRect())
 
     def getId(self):
         return self.id

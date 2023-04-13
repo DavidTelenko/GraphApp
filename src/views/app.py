@@ -3,11 +3,10 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from views.menu import MenuBar
 from views.viewport import GraphWidget
+from views.inputProps import *
 from utils import Resource
 from pathlib import Path
-import sys
 import qdarktheme
-import pickle
 from utils.algs import algs
 
 
@@ -55,7 +54,19 @@ class Application(QMainWindow):
             self.graphWidget.size(), self.graphWidget.size()))
 
     def on_algorithms_change(self, algData):
-        algs[algData[0]](self.graphWidget.graph)
+        if algData[0] != "pushRelabel":
+            return # for now
+        dialog = InputFlowProps(self)
+        if dialog.exec_() != QDialog.Accepted:
+            return 
+        s, t = dialog.getInput()
+        if s not in self.graphWidget.graph or t not in self.graphWidget.graph:
+            QMessageBox.critical(
+                self, "Error", "Source or target id is not in graph")
+            return
+        maxFlow = algs[algData[0]](self.graphWidget.graph, s, t)
+        QMessageBox.information(
+            self, "Result", f"Max flow of selected region is: {maxFlow}")
 
     def on_help_change(self, helpData):
         helpKey, helpName = helpData

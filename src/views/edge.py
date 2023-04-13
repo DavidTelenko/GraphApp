@@ -53,7 +53,6 @@ def calcWeightPos(sourcePoint, destPoint):
 class Edge(QGraphicsItem):
     def __init__(self, sourceNode, destNode):
         super().__init__()
-        # self.bRect = QGraphicsRectItem(self)
         self.source = sourceNode
         self.dest = destNode
         self.sourcePoint = QPointF()
@@ -136,10 +135,6 @@ class Edge(QGraphicsItem):
         # pos = QPointF(pos.x() - self.textItem.boundingRect().width() / 2,
         #               pos.y() - self.textItem.boundingRect().height() / 2)
         self.textItem.setPos(pos)
-
-        # self.bRect.setPen(QPen(Qt.green))
-        # self.bRect.setBrush(Qt.transparent)
-        # self.bRect.setRect(self.boundingRect())
         self.update()
 
     def setPen(self, pen):
@@ -170,6 +165,19 @@ class Edge(QGraphicsItem):
 
         if self.drawArrowHead:
             painter.drawPolygon(QPolygonF(self.arrowHead))
+
+    def shape(self):
+        path = QPainterPath()
+        path.moveTo(self.sourcePoint)
+        if self.drawArrowHead:
+            path.lineTo(self.destPoint)
+            path.addPolygon(QPolygonF(self.arrowHead))
+        else:
+            path.lineTo(self.destPoint)
+
+        stroker = QPainterPathStroker()
+        stroker.setWidth(max(self.pen.width(), 20))
+        return stroker.createStroke(path)
 
     def boundingRect(self):
         if not self.source or not self.dest:
