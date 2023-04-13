@@ -7,6 +7,8 @@ from utils import Resource
 from pathlib import Path
 import sys
 import qdarktheme
+import pickle
+from utils.algs import algs
 
 
 class Application(QMainWindow):
@@ -27,45 +29,36 @@ class Application(QMainWindow):
         self.setWindowIcon(QIcon("resources/assets/icon.png"))
         self.setTheme()
         self.loadUI()
+        self.currentFile = None
 
     def loadUI(self):
-        menusLayoutPath = self.resourcesPath / "strings" / \
-            self.settings["locale"] / "menus.json"
-        viewportStringPath = self.resourcesPath / "strings" / \
-            self.settings["locale"] / "viewport.json"
+        menusLayoutPath = self.resourcesPath / "menus.json"
 
         self.menusLayout = Resource(menusLayoutPath)
-        self.viewportStrings = Resource(viewportStringPath)
         self.setMinimumSize(1000, 800)
         self.setMenuBar(MenuBar(self.menusLayout, self.settings, self))
         self.setCentralWidget(self.loadMain())
-        self.setWindowTitle(self.metadata["appname"][self.settings["locale"]])
+        self.setWindowTitle(self.metadata["appname"])
 
     def loadMain(self):
-        return GraphWidget(self)
-        # return QGraphicsView(Viewport(self, self.viewportStrings), self)
+        self.graphWidget = GraphWidget(self)
+        return self.graphWidget
 
     def setTheme(self):
         self.setStyleSheet(self.themes[self.settings["theme"]])
-
-    def on_file_exit(self):
-        self.destroy()
-        sys.exit()
-
-    def on_lang_change(self, langData):
-        langKey, langName = langData
-        self.settings["locale"] = langKey
-        self.loadUI()
 
     def on_theme_change(self, themeData):
         themeKey, themeName = themeData
         self.settings["theme"] = themeKey
         self.setTheme()
+        self.graphWidget.resizeEvent(QResizeEvent(
+            self.graphWidget.size(), self.graphWidget.size()))
+
+    def on_algorithms_change(self, algData):
+        algs[algData[0]](self.graphWidget.graph)
 
     def on_help_change(self, helpData):
         helpKey, helpName = helpData
-        pagePath = self.resourcesPath / "pages" / \
-            self.settings["locale"] / f"{helpKey}.html"
+        pagePath = self.resourcesPath / "pages" / f"{helpKey}.html"
         with open(pagePath, encoding="utf8") as file:
             QMessageBox.about(self, helpName, file.read())
-

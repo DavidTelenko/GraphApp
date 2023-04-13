@@ -1,21 +1,7 @@
 {
-    "file": {
-        "name": "File",
-        "tabs": {
-            "open": "Open",
-            "exit": "Exit"
-        }
-    },
     "settings": {
         "name": "Settings",
         "menus": {
-            "lang": {
-                "name": "Language",
-                "tabs": {
-                    "uk_UA": "Ukrainian",
-                    "en_US": "English"
-                }
-            },
             "theme": {
                 "name": "Themes",
                 "tabs": {
@@ -31,6 +17,12 @@
         "tabs": {
             "howto": "How to Use?",
             "author": "About Author"
+        }
+    },
+    "algorithms": {
+        "name": "Algorithms",
+        "tabs": {
+            "pushRelabel": "Push-Relabel"
         }
     }
 }

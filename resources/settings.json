@@ -1,10 +1,4 @@
 {
-    "shortcuts": {
-        "file": {
-            "exit": "Ctrl+Q",
-            "open": "Ctrl+O"
-        }
-    },
-    "locale": "en_US",
+    "shortcuts": {},
     "theme": "dark"
 }

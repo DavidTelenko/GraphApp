@@ -1,6 +1,3 @@
 {
-    "appname": {
-        "en_US": "Graph App",
-        "uk_UA": "Додаток Граф"
-    }
+    "appname": "Graph App"
 }
