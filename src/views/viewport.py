@@ -104,6 +104,7 @@ class GraphWidget(QGraphicsView):
         newNode.setRect(-10, -10, 20, 20)
         newNode.setPen(QPen(Qt.NoPen))
         newNode.setBrush(QColor(150, 150, 150))
+        newNode.setTextColor(QColor(60, 60, 60))
         newNode.setPos(pos)
         while str(self.id) in self.graph:
             self.id += 1
@@ -131,9 +132,10 @@ class GraphWidget(QGraphicsView):
 
         edge = Edge(src, dest)
 
-        edge.setWeight(1)
+        edge.setWeight(weight)
         edge.setPen(QPen(QColor(100, 100, 100)))
         edge.setBrush(QBrush(QColor(100, 100, 100)))
+        edge.setTextColor(QBrush(QColor(40, 140, 220)))
 
         src.addEdge(edge)
 

@@ -39,15 +39,38 @@ def calcArrow(sourcePoint, destPoint, w, radius=0):
     return newEndPoint, [point2, arrowEndPoint, point3]
 
 
-def calcWeightPos(sourcePoint, destPoint):
-    dx, dy = sourcePoint.x() - destPoint.x(), sourcePoint.y() - destPoint.y()
+def calcWeightPos(sourcePoint: QPointF, destPoint: QPointF, textRect: QRectF, lineThickness: float):
+    # calculate the midpoint of the line
+    midPoint = sourcePoint + (destPoint - sourcePoint) / 2
 
-    length = sqrt(dx ** 2 + dy ** 2)
-    normX, normY = dx / length, dy / length
-    # perpX, perpY = -normY, normX
+    # calculate a vector orthogonal to the line
+    perpendicular_vector = QLineF(
+        sourcePoint, destPoint).normalVector().unitVector()
 
-    return QPointF(sourcePoint.x() - normX * (length / 2) - 20,
-                   sourcePoint.y() - normY * (length / 2) - 20)
+    # calculate a vector along the line
+    line_vector = destPoint - sourcePoint
+    line_length = QLineF(sourcePoint, destPoint).length()
+    line_vector = QPointF(line_vector.x() / line_length,
+                          line_vector.y() / line_length)
+
+    # calculate the sign of the dot product between the text normal and the line vector
+    text_normal = perpendicular_vector
+
+    text_direction = QPointF(text_normal.dx(), text_normal.dy())
+    line_direction = QPointF(line_vector.x(), line_vector.y())
+
+    dot_product = QPointF.dotProduct(text_direction, line_direction)
+
+    # offset the text position by half the text height plus the line thickness
+    offset = (textRect.height() / 2) + lineThickness
+    offset_vector = QPointF(perpendicular_vector.dx() * offset,
+                            perpendicular_vector.dy() * offset)
+
+    # calculate the position of the text item
+    text_position = midPoint + offset_vector - \
+        QPointF(textRect.width() / 2, textRect.height() / 2)
+
+    return text_position
 
 
 class Edge(QGraphicsItem):
@@ -132,10 +155,11 @@ class Edge(QGraphicsItem):
                 self.dest.pos(), self.thickness,
                 self.dest.rect().width() / 2)
 
-        pos = calcWeightPos(self.source.pos(), self.dest.pos())
         self.textItem.setFont(self.source.graph.globalFont)
         self.textItem.setPlainText(str(self.weight))
         self.textItem.setDefaultTextColor(self.textColor)
+        pos = calcWeightPos(self.source.pos(), self.dest.pos(),
+                            self.textItem.boundingRect(), self.thickness)
         # pos = QPointF(pos.x() - self.textItem.boundingRect().width() / 2,
         #               pos.y() - self.textItem.boundingRect().height() / 2)
         self.textItem.setPos(pos)

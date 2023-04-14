@@ -20,11 +20,15 @@ class Node(QGraphicsEllipseItem):
             "adjustment": 2.5,
             "color": QColor(255, 100, 100)
         }
+        self.textColor = QColor(255, 255, 255)
         self.selected = False
         self.graph = graphWidget
 
         self.id = -1
         self.label = None
+
+    def setTextColor(self, color):
+        self.textColor = color
 
     def setId(self, id):
         self.id = id
@@ -35,7 +39,7 @@ class Node(QGraphicsEllipseItem):
 
         self.label.setPlainText(str(self.id))
         self.label.setFont(self.graph.getGlobalFont())
-        self.label.setDefaultTextColor(self.brush().color().darker(230))
+        self.label.setDefaultTextColor(self.textColor)
 
         textRect = self.label.boundingRect()
         d = max(textRect.width(), textRect.height()) + 10
