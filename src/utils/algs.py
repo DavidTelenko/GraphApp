@@ -11,7 +11,9 @@ def deleteNode(adjacencyList, node):
 
 def renameNode(adjacencyList, oldId, newId):
     if oldId not in adjacencyList:
-        return
+        return False
+    if newId in adjacencyList:
+        return False
 
     newNode = adjacencyList[oldId]
 
@@ -23,6 +25,8 @@ def renameNode(adjacencyList, oldId, newId):
         if oldId in adjacencyList[node]:
             adjacencyList[node][newId] = adjacencyList[node][oldId]
             del adjacencyList[node][oldId]
+
+    return True
 
 
 def reweightEdge(adjacencyList, id1, id2, newWeight):

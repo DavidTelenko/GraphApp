@@ -46,8 +46,8 @@ def calcWeightPos(sourcePoint, destPoint):
     normX, normY = dx / length, dy / length
     # perpX, perpY = -normY, normX
 
-    return QPointF(sourcePoint.x() - normX * (length / 2),
-                   sourcePoint.y() - normY * (length / 2))
+    return QPointF(sourcePoint.x() - normX * (length / 2) - 20,
+                   sourcePoint.y() - normY * (length / 2) - 20)
 
 
 class Edge(QGraphicsItem):
@@ -61,6 +61,7 @@ class Edge(QGraphicsItem):
         self.pen = QPen(Qt.black, 1, Qt.SolidLine,
                         Qt.RoundCap, Qt.RoundJoin)
         self.selectedEffect = QBrush(QColor(180, 80, 80))
+        self.textColor = QColor(160, 160, 160)
         self.initialBrush = None
         self.selected = False
         self.brush = QBrush(Qt.black)
@@ -79,6 +80,9 @@ class Edge(QGraphicsItem):
 
     def setSelectedEffect(self, effect):
         self.selectedEffect = effect
+
+    def setTextColor(self, effect):
+        self.textColor = effect.color()
 
     def sourceNode(self):
         return self.source
@@ -131,7 +135,7 @@ class Edge(QGraphicsItem):
         pos = calcWeightPos(self.source.pos(), self.dest.pos())
         self.textItem.setFont(self.source.graph.globalFont)
         self.textItem.setPlainText(str(self.weight))
-        self.textItem.setDefaultTextColor(self.brush.color().darker(20))
+        self.textItem.setDefaultTextColor(self.textColor)
         # pos = QPointF(pos.x() - self.textItem.boundingRect().width() / 2,
         #               pos.y() - self.textItem.boundingRect().height() / 2)
         self.textItem.setPos(pos)

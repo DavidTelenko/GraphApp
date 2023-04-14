@@ -1,4 +1,11 @@
 {
-    "shortcuts": {},
+    "shortcuts": {
+        "file": {
+            "open": "Ctrl+O",
+            "save": "Ctrl+S",
+            "saveAs": "Ctrl+Shift+S",
+            "exit": "Ctrl+Q"
+        }
+    },
     "theme": "dark"
 }

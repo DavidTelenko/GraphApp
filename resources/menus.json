@@ -1,4 +1,12 @@
 {
+    "file": {
+        "name": "File",
+        "tabs": {
+            "open": "Open",
+            "saveAs": "Save as",
+            "exit": "Exit"
+        }
+    },
     "settings": {
         "name": "Settings",
         "menus": {

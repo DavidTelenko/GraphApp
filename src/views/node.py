@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from utils.algs import *
 from math import *
+from pprint import pprint
 
 
 class Node(QGraphicsEllipseItem):
@@ -34,7 +35,7 @@ class Node(QGraphicsEllipseItem):
 
         self.label.setPlainText(str(self.id))
         self.label.setFont(self.graph.getGlobalFont())
-        self.label.setDefaultTextColor(self.brush().color().darker(20))
+        self.label.setDefaultTextColor(self.brush().color().darker(230))
 
         textRect = self.label.boundingRect()
         d = max(textRect.width(), textRect.height()) + 10

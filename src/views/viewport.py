@@ -25,7 +25,8 @@ class GraphWidget(QGraphicsView):
 
         self.id = 0
         self.graph = {}
-        self.selected = set()
+        self.selectedNodes = []
+        self.selectedEdges = []
         self.nodePressed = False
 
         self.lastMousePress = None
@@ -52,18 +53,12 @@ class GraphWidget(QGraphicsView):
         self.globalFont = font
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
-        selectedNodes = list(filter(
-            lambda x: isinstance(x, Node), self.selected))
-
-        selectedEdges = list(filter(
-            lambda x: isinstance(x, Edge), self.selected))
-
         # print(selectedNodes)
         # print(selectedEdges)
 
         if event.key() == Qt.Key_F2:
 
-            if len(selectedNodes) == 1:
+            if len(self.selectedNodes) == 1 and len(self.selectedEdges) == 0:
                 text, okPressed = QInputDialog.getText(
                     self,
                     QCoreApplication.translate(str(self.__class__),
@@ -71,54 +66,54 @@ class GraphWidget(QGraphicsView):
                     QCoreApplication.translate(str(self.__class__),
                                                "Please enter the new id:"))
                 if okPressed:
-                    self.renameNode(selectedNodes[0], text)
+                    self.renameNode(self.selectedNodes[0], text)
+                    self.clearSelection()
                 return
 
-            if len(selectedEdges) == 1:
-                text, okPressed = QInputDialog.getInt(
+            if len(self.selectedEdges) == 1 and len(self.selectedNodes) == 0:
+                weight, okPressed = QInputDialog.getInt(
                     self,
                     QCoreApplication.translate(str(self.__class__),
                                                "New weight:"),
                     QCoreApplication.translate(str(self.__class__),
                                                "Please enter the new weight:"))
                 if okPressed:
-                    self.renameEdge(selectedEdges[0], text)
+                    self.renameEdge(self.selectedEdges[0], weight)
+                    self.clearSelection()
                 return
 
         if event.key() == Qt.Key_N:
-            if len(selectedNodes) != 2:
+            if len(self.selectedNodes) != 2:
                 return
-            source, dest = selectedNodes
+            source, dest = self.selectedNodes
             self.addEdge(source, dest, 1)
+            self.clearSelection()
 
         if event.key() == Qt.Key_Delete:
-            for item in self.selected:
-                if isinstance(item, Node):
-                    self.removeNode(item)
-                if isinstance(item, Edge):
-                    self.removeEdge(item)
-            self.selected.clear()
+            for item in self.selectedNodes:
+                self.removeNode(item)
+            for item in self.selectedEdges:
+                self.removeEdge(item)
+            self.selectedNodes.clear()
+            self.selectedEdges.clear()
 
         return super().keyPressEvent(event)
 
-    def addNode(self, pos):
+    def addNode(self, pos, text=None):
         newNode = Node(self)
         newNode.setRect(-10, -10, 20, 20)
         newNode.setPen(QPen(Qt.NoPen))
         newNode.setBrush(QColor(150, 150, 150))
         newNode.setPos(pos)
-        id = str(self.id)
+        while str(self.id) in self.graph:
+            self.id += 1
+        id = str(self.id) if text is None else text
         newNode.setId(id)
         self.graph[id] = {}
 
-        self.id += 1
         self.scene().addItem(newNode)
-        pprint(self.graph)
-
-    def adjustAllEdges(self):
-        for item in self.scene().items():
-            if isinstance(item, Edge):
-                item.adjust()
+        # pprint(self.graph)
+        return newNode
 
     def addEdge(self, src, dest, weight=1):
         if dest.getId() in self.graph[src.getId()]:
@@ -128,9 +123,11 @@ class GraphWidget(QGraphicsView):
 
         if src.getId() in self.graph[dest.getId()]:
             for edge in dest.edgeSet:
-                edge.drawArrowHead = False
-                edge.adjust()
-                return
+                if edge.source == dest and edge.dest == src:
+                    src.addEdge(edge)
+                    edge.drawArrowHead = False
+                    edge.adjust()
+                    return
 
         edge = Edge(src, dest)
 
@@ -142,17 +139,26 @@ class GraphWidget(QGraphicsView):
 
         self.scene().addItem(edge)
         self.adjustAllEdges()
+        return edge
 
     def renameNode(self, node, newId):
-        renameNode(self.graph, node.getId(), newId)
-        node.setId(newId)
-        pprint(self.graph)
+        if renameNode(self.graph, node.getId(), newId):
+            node.setId(newId)
+        else:
+            QMessageBox.critical(
+                self, "Error", f"Id {newId} is already in the graph")
+        # pprint(self.graph)
 
     def renameEdge(self, edge, newWeight):
+        if newWeight == 0:
+            QMessageBox.critical(
+                self, "Error", f"Weight cannot be zero")
+            return
+
         reweightEdge(self.graph, edge.sourceNode().getId(),
                      edge.destNode().getId(), newWeight)
         edge.setWeight(newWeight)
-        pprint(self.graph)
+        # pprint(self.graph)
 
     def removeNode(self, node):
         self.scene().removeItem(node)
@@ -161,26 +167,20 @@ class GraphWidget(QGraphicsView):
             self.scene().removeItem(edge)
         deleteNode(self.graph, node.getId())
 
-        pprint(self.graph)
+        # pprint(self.graph)
 
     def removeEdge(self, edge):
         self.scene().removeItem(edge)
 
-        for item in self.scene().items():
-            if isinstance(item, Node) and edge in item.edgeSet:
-                item.edgeSet.remove(edge)
+        dest = edge.dest
+        src = edge.source
+
+        dest.edgeSet.discard(src.getId())
+        src.edgeSet.discard(dest.getId())
 
         deleteEdge(self.graph, edge.sourceNode().getId(),
                    edge.destNode().getId())
-        pprint(self.graph)
-
-    def resizeEvent(self, event: QResizeEvent) -> None:
-        super().resizeEvent(event)
-        size = event.size()
-        scene = self.scene()
-        scene.setSceneRect(0, 0,
-                           max(scene.width(), size.width()),
-                           max(scene.height(), size.height()))
+        # pprint(self.graph)
 
     def getFirstNode(self, items):
         if items is not None:
@@ -194,8 +194,13 @@ class GraphWidget(QGraphicsView):
                 if isinstance(item, Edge):
                     return item
 
+    def adjustAllEdges(self):
+        for item in self.scene().items():
+            if isinstance(item, Edge):
+                item.adjust()
+
     def addNodeIfPossible(self, pos, items):
-        if not items and not self.selected:
+        if not items and not self.selectedEdges and not self.selectedNodes:
             self.addNode(pos)
 
     def dragScreenStart(self, pos, items):
@@ -237,27 +242,38 @@ class GraphWidget(QGraphicsView):
             return
         self.selectionRect.setRect(QRectF(self.lastMousePress, pos))
 
-    def selectionRoutineEnd(self):
+    def selectionRoutineEnd(self, select=True):
         if self.nodePressed or self.lastMousePress is None:
             return
         selected = self.scene().items(self.selectionRect.rect())
         self.selectionRect.setRect(
             QRectF(self.lastMousePress, self.lastMousePress))
-        self.selectItems(selected)
+        if select:
+            self.selectItems(selected)
+
+    def clearSelection(self):
+        for item in self.selectedNodes + self.selectedEdges:
+            item.setSelected(False)
+        self.selectedNodes.clear()
+        self.selectedEdges.clear()
+
+    def selectOrDeselect(self, item, selected):
+        if item.isSelected():
+            item.setSelected(False)
+            selected.remove(item)
+        else:
+            item.setSelected(True)
+            selected.append(item)
 
     def selectItems(self, selected):
         if not len(selected):
-            for item in self.selected:
-                item.setSelected(False)
-            self.selected.clear()
+            self.clearSelection()
             return
         for item in selected:
-            if item.isSelected():
-                item.setSelected(False)
-                self.selected.remove(item)
-            else:
-                item.setSelected(True)
-                self.selected.add(item)
+            if isinstance(item, Node):
+                self.selectOrDeselect(item, self.selectedNodes)
+            elif isinstance(item, Edge):
+                self.selectOrDeselect(item, self.selectedEdges)
 
     def checkNodePressed(self, items):
         self.nodePressed = False
@@ -265,6 +281,14 @@ class GraphWidget(QGraphicsView):
             if isinstance(item, Node):
                 self.nodePressed = True
                 return item
+
+    def scaleView(self, scaleFactor):
+        factor = self.transform().scale(scaleFactor, scaleFactor).mapRect(
+            QRectF(0, 0, 1, 1)).width()
+        if factor < 1 or factor > 100:
+            return
+
+        self.scale(scaleFactor, scaleFactor)
 
     def mousePressEvent(self, event: QMouseEvent):
         super().mousePressEvent(event)
@@ -288,7 +312,7 @@ class GraphWidget(QGraphicsView):
 
         pos = self.mapToScene(event.pos())
 
-        if event.buttons() == Qt.LeftButton:
+        if event.buttons() == Qt.LeftButton and event.modifiers() == Qt.NoModifier:
             self.selectionRoutineBody(pos)
 
         elif event.buttons() == Qt.RightButton:
@@ -300,22 +324,21 @@ class GraphWidget(QGraphicsView):
         pos = self.mapToScene(event.pos())
         items = self.scene().items(pos)
 
-        if event.button() == Qt.LeftButton and event.modifiers() == Qt.NoModifier:
+        if event.button() == Qt.LeftButton:
             self.addNodeIfPossible(pos, items)
-            self.selectionRoutineEnd()
+            self.selectionRoutineEnd(event.modifiers() == Qt.NoModifier)
 
         elif event.button() == Qt.RightButton:
             self.dragScreenEnd()
-
         # print(self.selected)
 
     def wheelEvent(self, event):
         self.scaleView(pow(2, event.angleDelta().y() / 240.0))
 
-    def scaleView(self, scaleFactor):
-        factor = self.transform().scale(scaleFactor, scaleFactor).mapRect(
-            QRectF(0, 0, 1, 1)).width()
-        if factor < 1 or factor > 100:
-            return
-
-        self.scale(scaleFactor, scaleFactor)
+    def resizeEvent(self, event: QResizeEvent) -> None:
+        super().resizeEvent(event)
+        size = event.size()
+        scene = self.scene()
+        scene.setSceneRect(0, 0,
+                           max(scene.width(), size.width()),
+                           max(scene.height(), size.height()))
